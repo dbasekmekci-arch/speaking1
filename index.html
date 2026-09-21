@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Speak & Spin — Language Speaking Studio</title>
+<style>
+:root{
+  --pink:#f4c8d7; --pink2:#f8dce6; --cream:#fffaf4; --beige:#ead9ca;
+  --brown:#4b2f2a; --brown2:#6b4740; --white:#fff; --muted:#8f7770;
+  --green:#dcebdc; --red:#f2d2d2; --shadow:0 18px 50px rgba(75,47,42,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,var(--cream),#fff4f7 55%,#f7e9e0);
+font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--brown);height:100dvh;overflow:hidden;}
+button,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{height:100%;padding:14px;display:grid;grid-template-rows:auto 1fr;gap:14px;overflow:hidden}
+.topbar{background:rgba(255,255,255,.76);backdrop-filter:blur(14px);border:1px solid rgba(75,47,42,.08);border-radius:24px;padding:12px 16px;display:flex;align-items:center;gap:18px;box-shadow:var(--shadow);flex-shrink:0;}
+.brand{font-weight:900;font-size:20px;letter-spacing:-.5px;white-space:nowrap}.brand span{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-top:-2px}
+.controls{display:flex;align-items:center;gap:8px;flex:1;justify-content:center}.pill{border:1px solid #e4d3cd;background:#fff;border-radius:999px;padding:9px 14px;color:var(--brown);font-weight:750}
+.levels{display:flex;background:var(--pink2);padding:4px;border-radius:999px;gap:2px}.level{border:0;background:transparent;border-radius:999px;padding:7px 11px;color:var(--brown);font-weight:800}.level.active{background:var(--brown);color:white}
+.progress{font-size:12px;color:var(--muted);text-align:right;min-width:145px}.progress b{color:var(--brown)}
+
+/* TABS */
+.tabs { display: flex; gap: 4px; background: var(--pink2); padding: 4px; border-radius: 999px; margin-bottom: 12px; flex-shrink: 0; }
+.tab { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 7px; color: var(--brown); font-weight: 800; font-size: 12px; text-align: center; }
+.tab.active { background: var(--brown); color: white; }
+.tab-content { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.tab-content.active { display: flex; }
+
+.main{min-height:0;display:grid;grid-template-columns:minmax(230px,1fr) minmax(420px,1.4fr) minmax(230px,1fr);gap:14px;overflow:hidden;}
+.panel{display:flex;flex-direction:column;min-height:0;background:rgba(255,255,255,.74);border:1px solid rgba(75,47,42,.08);border-radius:26px;box-shadow:var(--shadow);padding:14px;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding-right:4px;min-height:0;}
+.scroll::-webkit-scrollbar{width:5px}.scroll::-webkit-scrollbar-thumb{background:var(--beige);border-radius:20px}
+
+.word{background:#fff;border:1px solid #eadbd5;border-radius:15px;padding:10px;margin-bottom:8px;flex-shrink:0;}
+.word-head{display:flex;justify-content:space-between;gap:6px;align-items:start}.word b{font-size:14px}.badge{font-size:10px;font-weight:900;background:var(--pink2);padding:4px 7px;border-radius:999px}
+.word p{font-size:11px;line-height:1.35;margin:5px 0;color:var(--brown2)}
+.actions{display:flex;gap:5px}.know,.unknown{border:0;border-radius:10px;padding:5px 8px;font-size:11px;font-weight:800;flex:1}.know{background:var(--green);color:#38543b}.unknown{background:var(--red);color:#7b3939}
+
+.center{align-items:center;position:relative;}
+.hero{width:100%;display:flex;justify-content:space-between;align-items:center;padding:0 4px 6px;flex-shrink:0}.hero h1{font-size:18px;margin:0}.hero small{color:var(--muted)}
+.wheel-wrap{position:relative;width:min(44vh,460px);aspect-ratio:1/1;max-width:100%;margin:auto;display:grid;place-items:center;flex-shrink:1;}
+.pointer{position:absolute;z-index:10;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:27px solid var(--brown);filter:drop-shadow(0 4px 3px rgba(0,0,0,.12))}
+.wheel{width:100%;height:100%;border-radius:50%;position:relative;overflow:hidden;border:9px solid #fff;box-shadow:0 14px 35px rgba(75,47,42,.18);transform:rotate(0deg);transition:transform 4s cubic-bezier(.12,.8,.18,1);background:conic-gradient(#f4c8d7 0deg 45deg,#ead9ca 45deg 90deg,#f8dce6 90deg 135deg,#dfc5ba 135deg 180deg,#f2cfdc 180deg 225deg,#ead9ca 225deg 270deg,#f8dce6 270deg 315deg,#dfc5ba 315deg 360deg)}
+.segment-labels{position:absolute;inset:9px;border-radius:50%;pointer-events:none}.seg{position:absolute;left:50%;top:50%;width:42%;text-align:center;font-size:10px;font-weight:850;line-height:1.05;transform-origin:0 0}
+.hub{position:absolute;z-index:8;width:70px;height:70px;border-radius:50%;background:var(--brown);color:#fff;border:6px solid #fff;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:900;box-shadow:0 7px 18px rgba(75,47,42,.22)}
+.spin{border:0;background:var(--brown);color:#fff;border-radius:999px;padding:11px 25px;font-weight:900;box-shadow:0 8px 20px rgba(75,47,42,.2);margin:8px 0;flex-shrink:0;}.spin:disabled{opacity:.5;cursor:not-allowed}
+.selected{font-size:14px;font-weight:900;background:var(--pink2);padding:7px 14px;border-radius:999px;min-height:32px;text-align:center;flex-shrink:0;}
+
+.timer-card{background:#fff;border:1px solid #eadbd5;border-radius:17px;padding:10px;margin-bottom:8px;flex-shrink:0;}.timer-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:900}.time{font-size:26px;font-weight:950;letter-spacing:-1px;margin:2px 0 5px}.timer-actions{display:flex;gap:6px}.tiny{border:1px solid #e4d3cd;background:#fff;border-radius:9px;padding:5px 8px;font-size:11px;font-weight:800}.record{background:linear-gradient(135deg,#fff,#fff1f5);border:1px solid #eadbd5;border-radius:17px;padding:10px;flex-shrink:0;}.recording{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800}.dot{width:9px;height:9px;border-radius:50%;background:#c86c75}.dot.live{animation:pulse 1s infinite}@keyframes pulse{50%{opacity:.25;transform:scale(1.5)}}
+.prompt{font-size:12px;line-height:1.4;background:#fff;border-radius:12px;padding:10px;margin-top:7px}.resources a{display:block;color:var(--brown);text-decoration:none;background:#fff;border:1px solid #eadbd5;border-radius:10px;padding:6px;margin-top:4px;font-size:11px;font-weight:750}.resources a:hover{background:var(--pink2)}
+
+.notes-area { width: 100%; flex: 1; resize: none; border: 1px solid #eadbd5; border-radius: 17px; padding: 12px; font-size: 13px; line-height: 1.5; color: var(--brown); background: #fff; outline: none; }
+.notes-area:focus { border-color: var(--brown); box-shadow: 0 0 0 2px var(--pink2); }
+
+.ring{display:none;position:fixed;inset:0;background:rgba(75,47,42,.28);backdrop-filter:blur(5px);z-index:100;place-items:center}.ring.show{display:grid}.ringbox{background:var(--cream);border-radius:30px;padding:30px;text-align:center;width:min(360px,90vw);box-shadow:var(--shadow)}.ring-svg{width:130px;height:130px;margin:auto;transform:rotate(-90deg)}.ring-svg circle{fill:none;stroke-width:10}.ring-bg{stroke:#ead9ca}.ring-fg{stroke:#4b2f2a;stroke-linecap:round;stroke-dasharray:345;stroke-dashoffset:0;transition:stroke-dashoffset .8s}.ringbox h2{margin:8px 0 4px}.ringbox p{font-size:12px;color:var(--muted)}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--brown);color:white;padding:11px 15px;border-radius:13px;font-size:12px;font-weight:800;opacity:0;transform:translateY(8px);transition:.25s;z-index:200}.toast.show{opacity:1;transform:none}
+.cat{position:fixed;right:15px;bottom:60px;font-size:28px;filter:drop-shadow(0 3px 5px rgba(75,47,42,.16));pointer-events:none}
+
+.mobile-nav { display: none; background: rgba(255,255,255,.9); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow); padding: 6px; gap: 4px; flex-shrink: 0;}
+.m-tab { flex: 1; border: none; background: transparent; padding: 10px; font-size: 12px; font-weight: 800; color: var(--muted); border-radius: 14px; }
+.m-tab.active { background: var(--pink2); color: var(--brown); }
+
+@media(max-width:1000px){
+  .app{grid-template-rows: auto 1fr auto; padding: 8px; gap: 8px;}
+  .main{display:flex; flex-direction:column;}
+  .panel{display:none; flex:1;}
+  .panel.active-mobile{display:flex;}
+  .mobile-nav{display:flex;}
+  .progress{display:none}
+  .controls{justify-content:flex-end}
+  .cat{bottom: 70px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Speak & Spin<span>language speaking studio</span></div>
+    <div class="controls">
+      <select id="language" class="pill" aria-label="Language"><option value="en">English</option><option value="de">Deutsch</option></select>
+      <div class="levels" id="levels">
+        <button class="level" data-level="A1">A1</button><button class="level" data-level="A2">A2</button>
+        <button class="level" data-level="B1">B1</button><button class="level active" data-level="B2">B2</button>
+        <button class="level" data-level="C1">C1</button>
+      </div>
+    </div>
+    <div class="progress">🔥 <b id="streakCount">0</b> · Done: <b id="usedCount">0</b> · Due: <b id="dueCount">0</b></div>
+  </header>
+
+  <main class="main">
+    <!-- LEFT PANEL -->
+    <section class="panel" id="panel-left">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('left', 'vocab')">Vocab</button>
+        <button class="tab" onclick="switchTab('left', 'review')">Review</button>
+      </div>
+      <div id="tab-vocab" class="tab-content active scroll"></div>
+      <div id="tab-review" class="tab-content scroll">
+        <p style="font-size:12px; color:var(--muted); text-align:center; margin-top:20px;" id="emptyReview">No words to review!</p>
+      </div>
+    </section>
+
+    <!-- CENTER PANEL -->
+    <section class="panel center active-mobile" id="panel-center">
+      <div class="hero"><div><h1>Choose a topic</h1><small id="levelHint">B2 · arguments, examples & counterarguments</small></div><small id="poolCount">100+ topics</small></div>
+      <div class="wheel-wrap">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel"><div class="segment-labels" id="labels"></div></div>
+        <div class="hub">SPIN<br>ME</div>
+      </div>
+      <button class="spin" id="spin">SPIN THE WHEEL</button>
+      <div class="selected" id="selected">No topic selected yet</div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <section class="panel" id="panel-right">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('right', 'studio')">Studio</button>
+        <button class="tab" onclick="switchTab('right', 'notes')">Notes</button>
+      </div>
+      
+      <div id="tab-studio" class="tab-content active scroll">
+        <div class="timer-card">
+          <div class="timer-title">Research · 10 min</div>
+          <div class="time" id="researchTime">10:00</div>
+          <div class="timer-actions"><button class="tiny" id="researchStart">Start</button><button class="tiny" id="researchReset">Reset</button></div>
+          <div class="resources" id="resources"></div>
+        </div>
+        <div class="timer-card">
+          <div class="timer-title">Speaking · 3 min</div>
+          <div class="time" id="speakTime">03:00</div>
+          <div class="timer-actions"><button class="tiny" id="speakStart">Start</button><button class="tiny" id="speakReset">Reset</button></div>
+          <div class="prompt" id="prompt">Spin the wheel to receive a level-appropriate speaking task.</div>
+        </div>
+        <div class="record">
+          <div class="timer-title">Voice practice</div>
+          <div class="recording"><span class="dot" id="dot"></span><span id="recordStatus">Ready to record locally</span></div>
+          <div class="timer-actions" style="margin-top:8px"><button class="tiny" id="recordBtn">Start</button><button class="tiny" id="playBtn" disabled>Replay</button><button class="tiny" id="deleteBtn" disabled>Delete</button></div>
+          <audio id="audio" controls style="width:100%;margin-top:8px;height:32px;display:none"></audio>
+        </div>
+      </div>
+
+      <div id="tab-notes" class="tab-content">
+        <textarea class="notes-area" id="notesArea" placeholder="Type your speech outline, research, or feedback here... Auto-saved."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" id="mobileNav">
+    <button class="m-tab" onclick="switchMobile('left')">Vocab</button>
+    <button class="m-tab active" onclick="switchMobile('center')">Wheel</button>
+    <button class="m-tab" onclick="switchMobile('right')">Studio</button>
+  </nav>
+</div>
+
+<div class="ring" id="ring">
+  <div class="ringbox">
+    <svg class="ring-svg" viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="55"/><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="55"/></svg>
+    <h2>Research time is up ✨</h2><p>Your 3-minute speaking round is ready.</p>
+    <button class="spin" id="continueBtn">START SPEAKING</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div><div class="cat">🐈</div>
+
+<script>
+/* ---------- DATA: Human-readable topic banks ---------- */
+const TOPICS = {
+  en: {
+    A1:["My morning","My family","My best friend","My room","My home","My school","My city","My favorite food","My favorite drink","My clothes","My hobbies","My weekend","My birthday","My pet","My daily routine","My favorite color","My favorite season","My favorite day","My neighborhood","My favorite shop","At the café","At the supermarket","On the bus","At the train station","At school","After school","My free time","My phone","My favorite app","My favorite song","My favorite film","My favorite book","My favorite sport","My favorite place","My holiday","My summer","My winter","My plans today","My plans tomorrow","My morning coffee","Cooking at home","Making a sandwich","Going shopping","Buying clothes","Buying a gift","Meeting a friend","Calling a friend","Writing a message","Learning a language","Speaking with classmates"],
+    A2:["Weekend plans","A day off","Making plans with friends","Going to a restaurant","Ordering food","A shopping trip","Choosing clothes","Buying a present","A train journey","A bus journey","Booking a hotel","Planning a holiday","A city visit","A day at the beach","A rainy weekend","A busy morning","A relaxing evening","Cooking for friends","Trying a new recipe","Healthy meals","Eating out","My favorite café","A new hobby","Learning something new","Using social media","My favorite app","Taking photos","Watching a series","Going to the cinema","Listening to music","Reading for fun","Playing sport","Going for a walk","Meeting new people","Making a good impression","Helping a friend","Solving a small problem","Being late","Missing a bus","Losing something"],
+    B1:["Moving to a new city","Making new friends","Keeping friendships strong","Balancing study and work","Working in a team","A difficult decision","Learning from mistakes","A memorable journey","Traveling alone","Traveling with friends","Living abroad","Cultural differences","Adapting to a new place","Building a routine","Changing unhealthy habits","Managing a busy week","Finding time for hobbies","Digital friendships","Social media habits","Taking a break from your phone","Online shopping habits","Saving for a goal","Spending wisely","Choosing a career","First work experience","A good workplace","Working from home","Dealing with stress","Preparing for an interview","Learning from feedback","Being a good colleague","Customer service experiences","Making complaints","Solving everyday conflicts"],
+    B2:["The pressure to be productive","The value of free time","Making friends as an adult","Maintaining long-distance friendships","Healthy boundaries in relationships","Handling social expectations","The influence of social media","Taking a break from social media","Online identity","Digital privacy in everyday life","The convenience of online shopping","The psychology of impulse buying","Minimalism and consumption","Spending versus saving","Financial independence","Talking about money","Choosing a career path","Changing careers","Meaningful work","Workplace flexibility","Hybrid work culture","Professional communication","Giving and receiving criticism","Difficult conversations at work","Leadership in everyday situations","Teamwork and individual responsibility","Networking without feeling awkward","Preparing for a major move","Starting over in a new city","Adapting to cultural differences"],
+    C1:["What makes a meaningful life","Personal definitions of success","The hidden pressure to optimize life","Ambition without burnout","The social value of leisure","Why adults struggle to make friends","The changing meaning of friendship","Boundaries in close relationships","Honesty versus kindness","The social consequences of oversharing","Curating an online identity","How social media shapes self-image","Digital privacy as an everyday choice","Attention as a scarce resource","The economics of convenience","Why people buy things they do not need","Consumption and personal identity","Minimalism beyond aesthetics","Financial independence and freedom","The emotional side of money","Work as identity","The changing expectations of employers","What makes work meaningful","Flexibility and professional responsibility","Remote work and social connection","The hidden skills behind leadership","Leadership without authority","Constructive disagreement"]
+  },
+  de: {
+    A1:["Mein Morgen","Meine Familie","Mein bester Freund","Mein Zimmer","Mein Zuhause","Meine Schule","Meine Stadt","Mein Lieblingsessen","Mein Lieblingsgetränk","Meine Kleidung","Meine Hobbys","Mein Wochenende","Mein Geburtstag","Mein Haustier","Mein Tagesablauf","Meine Lieblingsfarbe","Meine Lieblingsjahreszeit","Mein Lieblingstag","Meine Nachbarschaft","Mein Lieblingsgeschäft","Im Café","Im Supermarkt","Im Bus","Am Bahnhof","In der Schule","Nach der Schule","Meine Freizeit","Mein Handy","Meine Lieblings-App","Mein Lieblingslied"],
+    A2:["Wochenendpläne","Ein freier Tag","Pläne mit Freunden machen","In ein Restaurant gehen","Essen bestellen","Ein Einkaufsbummel","Kleidung auswählen","Ein Geschenk kaufen","Eine Zugfahrt","Eine Busfahrt","Ein Hotel buchen","Einen Urlaub planen","Ein Stadtbesuch","Ein Tag am Strand","Ein regnerisches Wochenende","Ein geschäftiger Morgen","Ein entspannter Abend","Für Freunde kochen","Ein neues Rezept ausprobieren","Gesunde Mahlzeiten","Essen gehen","Mein Lieblingscafé","Ein neues Hobby","Etwas Neues lernen","Soziale Medien nutzen","Meine Lieblings-App","Fotos machen","Eine Serie schauen","Ins Kino gehen","Musik hören"],
+    B1:["Umzug in eine neue Stadt","Neue Freunde finden","Freundschaften pflegen","Studium und Arbeit vereinbaren","Im Team arbeiten","Eine schwierige Entscheidung","Aus Fehlern lernen","Eine unvergessliche Reise","Alleine reisen","Mit Freunden reisen","Im Ausland leben","Kulturelle Unterschiede","Sich an einen neuen Ort gewöhnen","Eine Routine aufbauen","Ungesunde Gewohnheiten ändern","Eine anstrengende Woche bewältigen","Zeit für Hobbys finden","Digitale Freundschaften","Umgang mit sozialen Medien","Eine Pause vom Handy machen","Online-Shopping-Gewohnheiten","Für ein Ziel sparen","Klug Geld ausgeben","Einen Berufswählen","Erste Arbeitserfahrung","Ein guter Arbeitsplatz","Von zu Hause arbeiten","Mit Stress umgehen","Vorbereitung auf ein Vorstellungsgespräch","Aus Feedback lernen"],
+    B2:["Der Druck, produktiv zu sein","Der Wert der Freizeit","Als Erwachsener Freunde finden","Pflege von Fernbeziehungen","Gesunde Grenzen in Beziehungen","Umgang mit sozialen Erwartungen","Der Einfluss sozialer Medien","Eine Pause von sozialen Medien","Digitale Identität","Digitale Privatsphäre im Alltag","Die Bequemlichkeit des Online-Shoppings","Die Psychologie von Spontankäufen","Minimalismus und Konsum","Geld ausgeben versus sparen","Finanzielle Unabhängigkeit","Über Geld sprechen","Wahl des Karrierewegs","Karrierewechsel","Sinnvolle Arbeit","Flexibilität am Arbeitsplatz","Hybride Arbeitskultur","Professionelle Kommunikation","Kritik geben und annehmen","Schwierige Gespräche bei der Arbeit","Führung in Alltagssituationen","Teamwork und Eigenverantwortung","Netzwerken ohne Unbehagen","Vorbereitung auf einen großen Umzug","Neuanfang in einer neuen Stadt","Anpassung an kulturelle Unterschiede"],
+    C1:["Was ein sinnvolles Leben ausmacht","Persönliche Definitionen von Erfolg","Der versteckte Druck zur Lebensoptimierung","Ambition ohne Burnout","Der soziale Wert von Freizeit","Warum Erwachsene sich schwer tun, Freunde zu finden","Die wandelnde Bedeutung von Freundschaft","Grenzen in engen Beziehungen","Ehrlichkeit versus Freundlichkeit","Die sozialen Folgen von Oversharing","Die Pflege einer Online-Identität","Wie soziale Medien das Selbstbild formen","Digitale Privatsphäre als Alltagsentscheidung","Aufmerksamkeit als knappe Ressource","Die Ökonomie der Bequemlichkeit","Warum Menschen Dinge kaufen, die sie nicht brauchen","Konsum und persönliche Identität","Minimalismus jenseits der Ästhetik","Finanzielle Unabhängigkeit und Freiheit","Die emotionale Seite von Geld","Arbeit als Identität","Die veränderten Erwartungen von Arbeitgebern","Was Arbeit sinnvoll macht","Flexibilität und berufliche Verantwortung","Remote-Arbeit und soziale Bindung","Die verborgenen Fähigkeiten hinter Führung","Führung ohne Autorität","Konstruktive Meinungsverschiedenheiten"]
+  }
+};
+
+const VOCAB = {
+ en:{
+  A1:["happy","friend","family","home","school","food","walk","weekend","music","help","like","want"],
+  A2:["pleased","routine","journey","appointment","comfortable","choose","return","suggest","healthy","neighborhood","surprise","prefer"],
+  B1:["adjust","reliable","experience","challenge","opportunity","priority","flexible","supportive","memorable","responsibility","improve","balanced"],
+  B2:["boundary","fulfilling","impulsive","adaptation","setback","compromise","nuanced","sustainable","independence","distraction","assertive","trade-off"],
+  C1:["meaningful","contentment","self-perception","convenience","consumerism","belonging","deliberate","resilience","uncertainty","compromise","fulfilment","perspective"]
+ },
+ de:{
+  A1:["glücklich","Freund","Familie","Zuhause","Schule","Essen","Spaziergang","Wochenende","Musik","helfen","mögen","wollen"],
+  A2:["zufrieden","Alltag","Reise","Termin","bequem","auswählen","zurückgeben","vorschlagen","gesund","Nachbarschaft","Überraschung","bevorzugen"],
+  B1:["sich anpassen","zuverlässig","Erfahrung","Herausforderung","Chance","Priorität","flexibel","unterstützend","unvergesslich","Verantwortung","verbessern","ausgeglichen"],
+  B2:["Grenze","erfüllend","spontan","Anpassung","Rückschlag","Kompromiss","nuanciert","nachhaltig","Unabhängigkeit","Ablenkung","selbstbewusst","Abwägung"],
+  C1:["sinnvoll","Zufriedenheit","Selbstwahrnehmung","Bequemlichkeit","Konsumverhalten","Zugehörigkeit","bewusst","Widerstandsfähigkeit","Unsicherheit","Kompromiss","Erfüllung","Perspektive"]
+ }
+};
+
+const DEFINITIONS = {
+ en:{
+  boundary:"a limit that defines what is acceptable", fulfilling:"giving a sense of purpose or satisfaction", impulsive:"done suddenly without careful thought", adaptation:"the process of adjusting to new conditions", setback:"a problem that delays progress", compromise:"an agreement in which each side gives something up", nuanced:"showing subtle differences or distinctions", sustainable:"able to continue without causing serious long-term harm", independence:"the ability to act without relying on others", distraction:"something that takes attention away from what matters", assertive:"clear and confident without being aggressive", "trade-off":"a situation where gaining one benefit requires accepting another", meaningful:"having real importance or value", contentment:"a calm feeling of satisfaction", "self-perception":"the way someone understands and evaluates themselves", convenience:"something that makes life easier or more practical", consumerism:"a strong focus on buying and using goods", belonging:"the feeling of being accepted as part of a group", deliberate:"done intentionally and with careful thought", resilience:"the ability to recover from difficulties", uncertainty:"a lack of certainty about what will happen", fulfilment:"a strong sense of satisfaction or purpose", perspective:"a particular way of viewing a situation"
+ },
+ de:{
+  Grenze:"eine klare Linie dessen, was akzeptabel ist", erfüllend:"so, dass etwas Sinn oder Zufriedenheit vermittelt", spontan:"ohne vorherige Planung oder Überlegung", Anpassung:"der Prozess, sich auf neue Bedingungen einzustellen", Rückschlag:"ein Problem, das einen Fortschritt verzögert", Kompromiss:"eine Einigung, bei der beide Seiten etwas nachgeben", nuanciert:"mit feinen, bedeutenden Unterschieden", nachhaltig:"so gestaltet, dass langfristig keine großen Schäden entstehen", Unabhängigkeit:"die Fähigkeit, selbstständig zu handeln", Ablenkung:"etwas, das die Aufmerksamkeit vom Wesentlichen wegführt", selbstbewusst:"klar und sicher auftretend, ohne aggressiv zu sein", Abwägung:"eine Entscheidung zwischen unterschiedlichen Vor- und Nachteilen", sinnvoll:"einen echten Zweck oder Wert habend", Zufriedenheit:"ein ruhiges Gefühl des Genügens", Selbstwahrnehmung:"die Art, wie jemand sich selbst wahrnimmt", Bequemlichkeit:"etwas, das den Alltag einfacher macht", Konsumverhalten:"die Art und Weise, wie Menschen Waren und Dienstleistungen nutzen", Zugehörigkeit:"das Gefühl, Teil einer Gruppe zu sein", bewusst:"mit Absicht und Aufmerksamkeit getan", Widerstandsfähigkeit:"die Fähigkeit, Schwierigkeiten zu überwinden", Unsicherheit:"fehlende Gewissheit darüber, was passieren wird", Erfüllung:"ein starkes Gefühl von Sinn oder Zufriedenheit", Perspektive:"eine bestimmte Sichtweise auf eine Situation"
+ }
+};
+
+/* ---------- DYNAMIC VOCABULARY MAPPING ---------- */
+const KEYWORD_MAP = {
+  en: {
+    "friend": ["friend", "reliable", "supportive", "boundary", "belonging", "compromise"],
+    "work": ["opportunity", "priority", "flexible", "responsibility", "setback", "assertive", "trade-off"],
+    "food": ["food", "healthy", "routine", "sustainable", "convenience"],
+    "travel": ["journey", "memorable", "adaptation", "convenience", "resilience"],
+    "shop": ["choose", "impulsive", "consumerism", "trade-off", "convenience"],
+    "buy": ["choose", "impulsive", "consumerism", "trade-off", "convenience"],
+    "social": ["self-perception", "distraction", "nuanced", "belonging"],
+    "hobby": ["happy", "fulfilling", "contentment", "meaningful"]
+  },
+  de: {
+    "freund": ["Freund", "zuverlässig", "unterstützend", "Grenze", "Zugehörigkeit", "Kompromiss"],
+    "arbeit": ["Chance", "Priorität", "flexibel", "Verantwortung", "Rückschlag", "selbstbewusst", "Abwägung"],
+    "essen": ["Essen", "gesund", "Alltag", "nachhaltig", "Bequemlichkeit"],
+    "reise": ["Reise", "unvergesslich", "Anpassung", "Bequemlichkeit", "Widerstandsfähigkeit"],
+    "kauf": ["auswählen", "spontan", "Konsumverhalten", "Abwägung", "Bequemlichkeit"],
+    "sozial": ["Selbstwahrnehmung", "Ablenkung", "nuanciert", "Zugehörigkeit"],
+    "hobby": ["glücklich", "erfüllend", "Zufriedenheit", "sinnvoll"]
+  }
+};
+
+function getWordsForTopic(topic, lang, level) {
+  const allWords = VOCAB[lang][level] || [];
+  if (!topic) return allWords.slice(0, 5);
+
+  let matched = new Set();
+  const lowerTopic = topic.toLowerCase();
+  const map = KEYWORD_MAP[lang] || {};
+
+  for (let key in map) {
+    if (lowerTopic.includes(key)) {
+       map[key].forEach(w => {
+         if (allWords.includes(w)) matched.add(w);
+       });
+    }
+  }
+
+  // Use a pseudo-random hash to consistently fill remaining words for a specific topic
+  let hash = 0;
+  for (let i = 0; i < topic.length; i++) hash = topic.charCodeAt(i) + ((hash << 5) - hash);
+  let seed = Math.abs(hash);
+  let random = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+
+  let remaining = allWords.filter(w => !matched.has(w)).sort(() => random() - 0.5);
+  return [...matched, ...remaining].slice(0, 5);
+}
+
+/* ---------- STATE ---------- */
+let currentLanguage = "en";
+let currentLevel = "B2";
+let currentTopics = [];
+let selectedTopic = null;
+let wheelRotation = 0;
+let spinning = false;
+
+let researchSeconds = 600;
+let speakSeconds = 180;
+let researchInterval = null;
+let speakInterval = null;
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let audioBlob = null;
+let audioUrl = null;
+
+/* ---------- STORAGE HELPER ---------- */
+function getStorageNumber(key){ return Number(localStorage.getItem(key) || 0); }
+function setStorageNumber(key,value){ localStorage.setItem(key,String(value)); }
+
+/* ---------- UI SWITCHING ---------- */
+function switchTab(panel, tabId) {
+  const p = document.getElementById(`panel-${panel}`);
+  p.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  p.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+}
+function switchMobile(panelId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active-mobile'));
+  document.getElementById(`panel-${panelId}`).classList.add('active-mobile');
+  document.querySelectorAll('.m-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+/* ---------- STREAK SYSTEM ---------- */
+function updateStreak() {
+  let lastVisit = localStorage.getItem('lastVisit');
+  let streak = getStorageNumber('streak');
+  const todayStr = new Date().toDateString();
+  
+  if (lastVisit !== todayStr) {
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (lastVisit === yesterday.toDateString()) { streak++; } 
+    else { streak = 1; }
+    localStorage.setItem('lastVisit', todayStr);
+    setStorageNumber('streak', streak);
+  }
+  document.getElementById('streakCount').textContent = streak;
+}
+
+/* ---------- DAILY ROTATION & ELIMINATION ---------- */
+function getDailyPool() {
+  const allTopics = TOPICS[currentLanguage][currentLevel] || [];
+  const eliminated = JSON.parse(localStorage.getItem(`elim_${currentLanguage}_${currentLevel}`) || "[]");
+  let pool = allTopics.filter(t => !eliminated.includes(t));
+  
+  if(pool.length < 8) { // Reset if we run out
+    localStorage.setItem(`elim_${currentLanguage}_${currentLevel}`, "[]");
+    pool = [...allTopics];
+  }
+  
+  // Rotate based on 24 hours (day of the year)
+  const dayOfYear = Math.floor(Date.now() / 86400000);
+  const startIndex = dayOfYear % pool.length;
+  let daily = [];
+  for(let i=0; i<8; i++) {
+    daily.push(pool[(startIndex + i) % pool.length]);
+  }
+  return daily;
+}
+
+function eliminateTopic(topic) {
+  const key = `elim_${currentLanguage}_${currentLevel}`;
+  const eliminated = JSON.parse(localStorage.getItem(key) || "[]");
+  if(!eliminated.includes(topic)) {
+    eliminated.push(topic);
+    localStorage.setItem(key, JSON.stringify(eliminated));
+  }
+}
+
+/* ---------- WHEEL ---------- */
+function renderWheel(){
+  currentTopics = getDailyPool();
+  const labelsEl = document.getElementById("labels");
+  labelsEl.innerHTML = "";
+  currentTopics.forEach((topic,index)=>{
+    const label = document.createElement("div");
+    label.className = "seg";
+    label.style.transform = `rotate(${index * 45 + 22.5}deg) translateX(${document.getElementById("wheel").clientWidth * 0.18}px) rotate(${-(index * 45 + 22.5)}deg)`;
+    labelsEl.appendChild(label);
+  });
+  document.getElementById("poolCount").textContent = `${currentTopics.length} daily topics`;
+}
+
+document.getElementById("spin").onclick = () => {
+  if(spinning) return;
+  spinning = true;
+  document.getElementById("spin").disabled = true;
+  
+  const winningIndex = Math.floor(Math.random() * 8);
+  const segmentCenter = winningIndex * 45 + 22.5;
+  const desired = (360 - segmentCenter + 360) % 360;
+  const current = ((wheelRotation % 360) + 360) % 360;
+  let delta = (desired - current + 360) % 360;
+  wheelRotation += (5 + Math.floor(Math.random() * 3)) * 360 + delta;
+  document.getElementById("wheel").style.transform = `rotate(${wheelRotation}deg)`;
+
+  setTimeout(() => {
+    selectedTopic = currentTopics[winningIndex];
+    document.getElementById("selected").textContent = selectedTopic;
+    
+    eliminateTopic(selectedTopic); 
+    renderWheel(); 
+    
+    updateSpeakingPrompt();
+    updateResources();
+    renderVocabulary(); // Trigger dynamic words to load
+
+    const used = getStorageNumber("speakSpinUsed") + 1;
+    setStorageNumber("speakSpinUsed", used);
+    document.getElementById("usedCount").textContent = used;
+    
+    spinning = false;
+    document.getElementById("spin").disabled = false;
+  }, 4100);
+};
+
+/* ---------- VOCAB & REVIEW ---------- */
+function renderVocabulary(){
+  const vocabEl = document.getElementById("tab-vocab");
+  vocabEl.innerHTML = "";
+  const defs = DEFINITIONS[currentLanguage] || {};
+  
+  const words = getWordsForTopic(selectedTopic, currentLanguage, currentLevel);
+
+  words.forEach(word => {
+    const card = document.createElement("div");
+    card.className = "word";
+    card.innerHTML = `
+      <div class="word-head"><b>${word}</b><span class="badge">${currentLevel}</span></div>
+      <p>${defs[word] || "Practice using this word."}</p>
+      <div class="actions">
+        <button class="unknown" onclick="markReview('${word}')">Review Later</button>
+      </div>
+    `;
+    vocabEl.appendChild(card);
+  });
+  renderReviewTab();
+}
+
+function markReview(word) {
+  setStorageNumber(`due_${currentLanguage}_${currentLevel}_${word}`, 1);
+  showToast(`"${word}" added to Review tab`);
+  renderReviewTab();
+}
+
+function markMastered(word) {
+  setStorageNumber(`due_${currentLanguage}_${currentLevel}_${word}`, 0);
+  showToast(`"${word}" mastered!`);
+  renderReviewTab();
+}
+
+function renderReviewTab() {
+  const reviewEl = document.getElementById("tab-review");
+  reviewEl.innerHTML = "";
+  let count = 0;
+  
+  const words = VOCAB[currentLanguage][currentLevel] || [];
+  const defs = DEFINITIONS[currentLanguage] || {};
+
+  words.forEach(word => {
+    if(getStorageNumber(`due_${currentLanguage}_${currentLevel}_${word}`) > 0) {
+      count++;
+      const card = document.createElement("div");
+      card.className = "word";
+      card.innerHTML = `
+        <div class="word-head"><b>${word}</b><span class="badge">${currentLevel}</span></div>
+        <p>${defs[word] || ""}</p>
+        <div class="actions">
+          <button class="know" onclick="markMastered('${word}')">Mastered</button>
+        </div>
+      `;
+      reviewEl.appendChild(card);
+    }
+  });
+
+  if(count === 0) {
+    reviewEl.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; margin-top:20px;">No words to review!</p>`;
+  }
+  document.getElementById("dueCount").textContent = count;
+}
+
+/* ---------- OTHER CORE FUNCTIONS ---------- */
+function updateSpeakingPrompt(){
+  const promptEl = document.getElementById("prompt");
+  if(!selectedTopic) {
+    promptEl.innerHTML = currentLanguage === 'de' 
+      ? "Drehe das Rad, um eine stufengerechte Sprechaufgabe zu erhalten."
+      : "Spin the wheel to receive a level-appropriate speaking task.";
+    return;
+  }
+  
+  const targetWords = getWordsForTopic(selectedTopic, currentLanguage, currentLevel);
+  const wordsDisplay = targetWords.slice(0, 5).join(", ");
+  
+  let taskHtml = "";
+  if (currentLanguage === "de") {
+    const objectives = {
+      A1: `Beschreibe kurz deine Gedanken oder Erfahrungen zu <strong>„${selectedTopic}“</strong>.`,
+      A2: `Erkläre deine Routine, Erfahrungen oder Gewohnheiten zum Thema <strong>„${selectedTopic}“</strong>.`,
+      B1: `Äußere deine Meinung zu <strong>„${selectedTopic}“</strong> und erzähle eine passende Geschichte.`,
+      B2: `Diskutiere <strong>„${selectedTopic}“</strong> strukturiert mit eigenen Argumenten und Gegenargumenten.`,
+      C1: `Analysiere und bewerte das Thema <strong>„${selectedTopic}“</strong> mit einer differenzierten These.`
+    };
+
+    let requirements = [
+      `<b>1. Standpunkt & Begründung:</b> Erkläre deine Meinung / Hauptaussage mit klaren Gründen.`,
+      `<b>2. Persönliches Beispiel:</b> Gib ein konkretes persönliches oder praktisches Beispiel.`
+    ];
+
+    if (currentLevel === "B2" || currentLevel === "C1") {
+      requirements.push(`<b>3. Gegenperspektive:</b> Gehe auf mindestens ein Gegenargument oder eine alternative Sichtweise ein.`);
+    }
+
+    requirements.push(`<b>${requirements.length + 1}. Zielwörter:</b> Verwende mindestens 3 der folgenden Zielwörter: <i>${wordsDisplay}</i>.`);
+
+    taskHtml = `
+      <div style="font-weight:800;margin-bottom:6px;color:var(--brown);">${objectives[currentLevel] || objectives.B2}</div>
+      <ul style="margin:4px 0 0 16px;padding:0;font-size:11.5px;line-height:1.45;color:var(--brown2);">
+        ${requirements.map(req => `<li style="margin-bottom:3px;">${req}</li>`).join("")}
+      </ul>
+    `;
+  } else {
+    const objectives = {
+      A1: `Briefly describe your thoughts or personal experience regarding <strong>"${selectedTopic}"</strong>.`,
+      A2: `Explain your habits, experiences, or routine concerning <strong>"${selectedTopic}"</strong>.`,
+      B1: `Express your opinion on <strong>"${selectedTopic}"</strong> and share a relevant past experience.`,
+      B2: `Discuss <strong>"${selectedTopic}"</strong> with a well-reasoned argument and alternative perspectives.`,
+      C1: `Critically analyze and evaluate <strong>"${selectedTopic}"</strong> with a nuanced thesis.`
+    };
+
+    let requirements = [
+      `<b>1. Opinion & Reasoning:</b> Clearly state your position and explain your reasoning.`,
+      `<b>2. Personal Example:</b> Include a concrete personal or real-world example.`
+    ];
+
+    if (currentLevel === "B2" || currentLevel === "C1") {
+      requirements.push(`<b>3. Alternative Perspective:</b> Address at least one counterargument or alternative view.`);
+    }
+
+    requirements.push(`<b>${requirements.length + 1}. Target Words:</b> Use at least 3 target vocabulary words: <i>${wordsDisplay}</i>.`);
+
+    taskHtml = `
+      <div style="font-weight:800;margin-bottom:6px;color:var(--brown);">${objectives[currentLevel] || objectives.B2}</div>
+      <ul style="margin:4px 0 0 16px;padding:0;font-size:11.5px;line-height:1.45;color:var(--brown2);">
+        ${requirements.map(req => `<li style="margin-bottom:3px;">${req}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  promptEl.innerHTML = taskHtml;
+}
+
+function updateLevelHint() {
+  const hints = {
+    en: {
+      A1: "A1 · simple descriptions & daily life",
+      A2: "A2 · routines, habits & experiences",
+      B1: "B1 · opinions, reasons & stories",
+      B2: "B2 · arguments, examples & counterarguments",
+      C1: "C1 · synthesis, nuance & evaluation"
+    },
+    de: {
+      A1: "A1 · einfache Beschreibungen & Alltag",
+      A2: "A2 · Routinen, Gewohnheiten & Erfahrungen",
+      B1: "B1 · Meinungen, Begründungen & Geschichten",
+      B2: "B2 · Argumente, Beispiele & Gegenpositionen",
+      C1: "C1 · Synthese, Nuancen & Evaluation"
+    }
+  };
+  const hintEl = document.getElementById("levelHint");
+  if (hintEl) {
+    hintEl.textContent = (hints[currentLanguage] && hints[currentLanguage][currentLevel]) || `${currentLevel} · speaking practice`;
+  }
+}
+
+function updateResources(){
+  const resEl = document.getElementById("resources");
+  resEl.innerHTML = "";
+  if(!selectedTopic) return;
+  const encoded = encodeURIComponent(selectedTopic);
+  resEl.innerHTML = `
+    <a href="https://www.google.com/search?q=${encoded}" target="_blank">Search "${selectedTopic}"</a>
+    <a href="https://www.youtube.com/results?search_query=${encoded}" target="_blank">YouTube: "${selectedTopic}"</a>
+  `;
+}
+
+/* ---------- TIMERS & RIGHT PANEL CONTROLS ---------- */
+function formatTime(sec) {
+  let m = Math.floor(sec / 60).toString().padStart(2, '0');
+  let s = (sec % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+// Research Timer
+document.getElementById('researchStart').onclick = function() {
+  if (this.textContent === 'Start') {
+    this.textContent = 'Pause';
+    researchInterval = setInterval(() => {
+      if (researchSeconds > 0) {
+        researchSeconds--;
+        document.getElementById('researchTime').textContent = formatTime(researchSeconds);
+      } else {
+        clearInterval(researchInterval);
+        this.textContent = 'Start';
+        document.getElementById('ring').classList.add('show');
+      }
+    }, 1000);
+  } else {
+    this.textContent = 'Start';
+    clearInterval(researchInterval);
+  }
+};
+
+document.getElementById('researchReset').onclick = function() {
+  clearInterval(researchInterval);
+  document.getElementById('researchStart').textContent = 'Start';
+  researchSeconds = 600;
+  document.getElementById('researchTime').textContent = '10:00';
+};
+
+// Speaking Timer Modal
+document.getElementById('continueBtn').onclick = () => {
+  document.getElementById('ring').classList.remove('show');
+};
+
+// Speak Timer
+document.getElementById('speakStart').onclick = function() {
+  if (this.textContent === 'Start') {
+    this.textContent = 'Pause';
+    speakInterval = setInterval(() => {
+      if (speakSeconds > 0) {
+        speakSeconds--;
+        document.getElementById('speakTime').textContent = formatTime(speakSeconds);
+      } else {
+        clearInterval(speakInterval);
+        this.textContent = 'Start';
+      }
+    }, 1000);
+  } else {
+    this.textContent = 'Start';
+    clearInterval(speakInterval);
+  }
+};
+
+document.getElementById('speakReset').onclick = function() {
+  clearInterval(speakInterval);
+  document.getElementById('speakStart').textContent = 'Start';
+  speakSeconds = 180;
+  document.getElementById('speakTime').textContent = '03:00';
+};
+
+// Audio Recording
+document.getElementById('recordBtn').onclick = async function() {
+  if (this.textContent === 'Start') {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      recordedChunks = [];
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+        audioUrl = URL.createObjectURL(audioBlob);
+        const audioEl = document.getElementById('audio');
+        audioEl.src = audioUrl;
+        audioEl.style.display = 'block';
+        document.getElementById('playBtn').disabled = false;
+        document.getElementById('deleteBtn').disabled = false;
+        document.getElementById('recordStatus').textContent = 'Recording saved';
+      };
+      mediaRecorder.start();
+      this.textContent = 'Stop';
+      document.getElementById('dot').classList.add('live');
+      document.getElementById('recordStatus').textContent = 'Recording...';
+    } catch (err) {
+      showToast('Microphone access denied');
+    }
+  } else {
+    mediaRecorder.stop();
+    this.textContent = 'Start';
+    document.getElementById('dot').classList.remove('live');
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+};
+
+document.getElementById('playBtn').onclick = function() {
+  document.getElementById('audio').play();
+};
+
+document.getElementById('deleteBtn').onclick = function() {
+  audioBlob = null;
+  audioUrl = null;
+  const audioEl = document.getElementById('audio');
+  audioEl.style.display = 'none';
+  audioEl.src = '';
+  this.disabled = true;
+  document.getElementById('playBtn').disabled = true;
+  document.getElementById('recordStatus').textContent = 'Ready to record locally';
+  showToast('Recording deleted');
+};
+
+/* Notes */
+const notesArea = document.getElementById("notesArea");
+notesArea.value = localStorage.getItem("userNotes") || "";
+notesArea.addEventListener("input", () => localStorage.setItem("userNotes", notesArea.value));
+
+/* Toasts */
+let toastTimer;
+function showToast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), 2200);
+}
+
+document.getElementById("language").onchange = (e) => { 
+  currentLanguage = e.target.value; 
+  renderWheel(); 
+  renderVocabulary(); 
+  updateLevelHint();
+  updateSpeakingPrompt();
+  updateResources();
+};
+
+document.getElementById("levels").onclick = (e) => {
+  const b = e.target.closest(".level");
+  if(b) {
+    document.querySelectorAll(".level").forEach(btn=>btn.classList.remove("active"));
+    b.classList.add("active");
+    currentLevel = b.dataset.level;
+    renderWheel(); 
+    renderVocabulary(); 
+    updateLevelHint();
+    updateSpeakingPrompt();
+    updateResources();
+  }
+};
+
+function init() {
+  updateStreak();
+  renderWheel();
+  renderVocabulary();
+  updateLevelHint();
+  updateSpeakingPrompt();
+  document.getElementById("usedCount").textContent = getStorageNumber("speakSpinUsed");
+}
+init();
+</script>
+</body>
+</html>
